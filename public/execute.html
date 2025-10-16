@@ -197,28 +197,31 @@
     <script>
         let requestConfig = null;
 
-        // 从 URL 获取请求 ID
-        const pathParts = window.location.pathname.split('/');
-        const requestId = pathParts[pathParts.length - 1];
-
-        async function loadRequestConfig() {
+        // 从 URL 参数获取编码的配置
+        function loadRequestConfig() {
             try {
-                const response = await fetch(`/api/request/${requestId}`);
-                const result = await response.json();
+                const urlParams = new URLSearchParams(window.location.search);
+                const encodedData = urlParams.get('data');
 
-                if (result.success) {
-                    requestConfig = result.config;
-                    displayRequestInfo();
-
-                    // 自动执行请求
-                    setTimeout(() => {
-                        executeRequest();
-                    }, 500);
-                } else {
-                    showError('请求配置不存在或已过期');
+                if (!encodedData) {
+                    showError('缺少请求配置数据');
+                    return;
                 }
+
+                // 解码 base64url
+                const jsonStr = atob(encodedData.replace(/-/g, '+').replace(/_/g, '/'));
+                requestConfig = JSON.parse(jsonStr);
+
+                displayRequestInfo();
+
+                // 自动执行请求
+                setTimeout(() => {
+                    executeRequest();
+                }, 500);
+
             } catch (error) {
-                showError('加载请求配置失败: ' + error.message);
+                console.error('解码失败:', error);
+                showError('解析请求配置失败: ' + error.message);
             }
         }
 
@@ -242,9 +245,21 @@
             document.getElementById('resultBox').classList.remove('show');
 
             try {
+                // 编码配置并发送
+                const encodedConfig = btoa(JSON.stringify(requestConfig))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=/g, '');
+
                 // 通过后端代理发起请求（避免跨域）
-                const response = await fetch(`/api/proxy-request/${requestId}`, {
-                    method: 'POST'
+                const response = await fetch('/api/proxy-request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        data: encodedConfig
+                    })
                 });
 
                 const result = await response.json();
