@@ -76,6 +76,11 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('生成二维码失败:', error);
-    res.status(500).json({ error: '生成二维码失败: ' + error.message });
+    console.error('错误堆栈:', error.stack);
+    console.error('请求体:', req.body);
+    res.status(500).json({
+      error: '生成二维码失败: ' + error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

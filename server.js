@@ -3,19 +3,17 @@ const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const path = require('path');
+const pako = require('pako');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.PUBLIC_HOST || 'localhost'; // 公网地址或域名
 
-// 存储请求配置的内存数据库（生产环境建议使用 Redis 或数据库）
-const requestStore = new Map();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// 接收 body 数据并生成二维码
+// 接收 body 数据并生成二维码（使用压缩）
 app.post('/api/generate-qr', async (req, res) => {
   try {
     const { url, method = 'POST', headers = {}, body } = req.body;
@@ -27,22 +25,38 @@ app.post('/api/generate-qr', async (req, res) => {
     // 生成唯一 ID
     const requestId = uuidv4();
 
-    // 存储请求配置（24小时后自动删除）
-    requestStore.set(requestId, {
+    // 存储请求配置
+    const config = {
       url,
       method,
       headers,
       body,
       createdAt: Date.now()
-    });
+    };
 
-    // 24小时后删除
-    setTimeout(() => {
-      requestStore.delete(requestId);
-    }, 24 * 60 * 60 * 1000);
+    // 将配置 JSON 字符串化
+    const jsonStr = JSON.stringify(config);
 
-    // 生成二维码（包含执行页面的 URL）
-    const executeUrl = `http://${HOST}:${PORT}/execute/${requestId}`;
+    // 使用 pako 压缩数据
+    const compressed = pako.deflate(jsonStr);
+
+    // 手动转换为 base64url 编码（兼容性更好）
+    const base64 = Buffer.from(compressed).toString('base64');
+    const encodedConfig = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+
+    // 获取当前域名
+    const protocol = HOST === 'localhost' ? 'http' : 'https';
+    const portStr = HOST === 'localhost' ? `:${PORT}` : '';
+    const executeUrl = `${protocol}://${HOST}${portStr}/execute.html?data=${encodedConfig}`;
+
+    console.log('原始数据长度:', jsonStr.length);
+    console.log('压缩后长度:', compressed.length);
+    console.log('base64url 长度:', encodedConfig.length);
+
+    // 生成二维码
     const qrCodeDataUrl = await QRCode.toDataURL(executeUrl, {
       width: 300,
       margin: 2
@@ -57,39 +71,33 @@ app.post('/api/generate-qr', async (req, res) => {
 
   } catch (error) {
     console.error('生成二维码失败:', error);
-    res.status(500).json({ error: '生成二维码失败' });
+    console.error('错误堆栈:', error.stack);
+    res.status(500).json({
+      error: '生成二维码失败: ' + error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
-// 获取请求配置
-app.get('/api/request/:id', (req, res) => {
-  const requestId = req.params.id;
-  const config = requestStore.get(requestId);
 
-  if (!config) {
-    return res.status(404).json({ error: '请求配置不存在或已过期' });
-  }
-
-  res.json({
-    success: true,
-    config
-  });
-});
-
-// 执行页面路由
-app.get('/execute/:id', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'execute.html'));
-});
-
-// 代理执行请求（解决跨域问题）
-app.post('/api/proxy-request/:id', async (req, res) => {
+//代理执行请求（新版本 - 使用压缩数据）
+app.post('/api/proxy-request', async (req, res) => {
   try {
-    const requestId = req.params.id;
-    const config = requestStore.get(requestId);
+    const { data } = req.body;
 
-    if (!config) {
-      return res.status(404).json({ error: '请求配置不存在或已过期' });
+    if (!data) {
+      return res.status(400).json({ error: '缺少配置数据' });
     }
+
+    // 解码 base64url 为二进制数据（手动处理兼容性更好）
+    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+    // 添加 padding
+    const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const compressed = Buffer.from(paddedBase64, 'base64');
+
+    // 使用 pako 解压
+    const decompressed = pako.inflate(compressed, { to: 'string' });
+    const config = JSON.parse(decompressed);
 
     // 准备请求体
     let requestBody;
@@ -97,20 +105,16 @@ app.post('/api/proxy-request/:id', async (req, res) => {
 
     if (config.body) {
       if (contentType.includes('application/x-www-form-urlencoded')) {
-        // URL 编码格式
         if (typeof config.body === 'string') {
           requestBody = config.body;
         } else {
-          // 如果是对象，转换为 URL 编码字符串
           requestBody = new URLSearchParams(config.body).toString();
         }
       } else if (contentType.includes('application/json')) {
-        // JSON 格式
         requestBody = typeof config.body === 'string'
           ? config.body
           : JSON.stringify(config.body);
       } else {
-        // 其他格式，保持原样
         requestBody = typeof config.body === 'string'
           ? config.body
           : JSON.stringify(config.body);
@@ -120,11 +124,10 @@ app.post('/api/proxy-request/:id', async (req, res) => {
     console.log('代理请求:', {
       url: config.url,
       method: config.method,
-      headers: config.headers,
       bodyLength: requestBody ? requestBody.length : 0
     });
 
-    // 使用 Node.js 的 fetch（需要 Node 18+）
+    // 发起请求
     const response = await fetch(config.url, {
       method: config.method,
       headers: config.headers,
@@ -133,17 +136,34 @@ app.post('/api/proxy-request/:id', async (req, res) => {
 
     const responseText = await response.text();
     let responseData;
+    let isHTML = false;
 
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = responseText;
+    // 检查是否是 HTML 响应
+    if (responseText.trim().toLowerCase().startsWith('<!doctype') ||
+        responseText.trim().toLowerCase().startsWith('<html')) {
+      isHTML = true;
+      responseData = {
+        error: '服务器返回了错误页面',
+        hint: '可能原因：Cookie 过期、签名失效、请求被拦截',
+        statusCode: response.status,
+        preview: responseText.substring(0, 200) + '...'
+      };
+    } else {
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = {
+          rawText: responseText,
+          hint: '响应不是 JSON 格式'
+        };
+      }
     }
 
     res.json({
-      success: true,
+      success: !isHTML && response.ok,
       status: response.status,
       statusText: response.statusText,
+      isHTML: isHTML,
       data: responseData
     });
 
@@ -155,18 +175,6 @@ app.post('/api/proxy-request/:id', async (req, res) => {
     });
   }
 });
-
-// 清理过期数据（每小时执行一次）
-setInterval(() => {
-  const now = Date.now();
-  const dayInMs = 24 * 60 * 60 * 1000;
-
-  for (const [id, data] of requestStore.entries()) {
-    if (now - data.createdAt > dayInMs) {
-      requestStore.delete(id);
-    }
-  }
-}, 60 * 60 * 1000);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`服务运行在 http://${HOST}:${PORT}`);
