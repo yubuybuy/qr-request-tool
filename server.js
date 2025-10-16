@@ -17,11 +17,14 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.PUBLIC_HOST || 'localhost'; // 公网地址或域名
 
+// 使用内存存储（云服务器单进程完美支持）
+global.requestStore = global.requestStore || new Map();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// 接收 body 数据并生成二维码（使用压缩）
+// 接收 body 数据并生成二维码（使用服务器存储）
 app.post('/api/generate-qr', async (req, res) => {
   try {
     const { url, method = 'POST', headers = {}, body } = req.body;
@@ -33,7 +36,7 @@ app.post('/api/generate-qr', async (req, res) => {
     // 生成唯一 ID
     const requestId = generateUUID();
 
-    // 存储请求配置
+    // 存储请求配置（使用压缩）
     const config = {
       url,
       method,
@@ -42,32 +45,33 @@ app.post('/api/generate-qr', async (req, res) => {
       createdAt: Date.now()
     };
 
-    // 将配置 JSON 字符串化
     const jsonStr = JSON.stringify(config);
-
-    // 使用 pako 压缩数据
     const compressed = pako.deflate(jsonStr);
-
-    // 手动转换为 base64url 编码（兼容性更好）
     const base64 = Buffer.from(compressed).toString('base64');
-    const encodedConfig = base64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+
+    // 存储压缩后的数据
+    global.requestStore.set(requestId, base64);
+
+    // 10分钟后删除
+    setTimeout(() => {
+      global.requestStore.delete(requestId);
+    }, 10 * 60 * 1000);
 
     // 获取当前域名
     const protocol = HOST === 'localhost' ? 'http' : 'https';
     const portStr = HOST === 'localhost' ? `:${PORT}` : '';
-    const executeUrl = `${protocol}://${HOST}${portStr}/execute.html?data=${encodedConfig}`;
+    const executeUrl = `${protocol}://${HOST}${portStr}/execute.html?id=${requestId}`;
 
     console.log('原始数据长度:', jsonStr.length);
     console.log('压缩后长度:', compressed.length);
-    console.log('base64url 长度:', encodedConfig.length);
+    console.log('存储 ID:', requestId);
+    console.log('URL 长度:', executeUrl.length);
 
     // 生成二维码
     const qrCodeDataUrl = await QRCode.toDataURL(executeUrl, {
       width: 300,
-      margin: 2
+      margin: 2,
+      errorCorrectionLevel: 'M'
     });
 
     res.json({
@@ -87,25 +91,48 @@ app.post('/api/generate-qr', async (req, res) => {
   }
 });
 
-
-//代理执行请求（新版本 - 使用压缩数据）
-app.post('/api/proxy-request', async (req, res) => {
+// 获取存储的配置
+app.get('/api/get-config', async (req, res) => {
   try {
-    const { data } = req.body;
+    const { id } = req.query;
 
-    if (!data) {
-      return res.status(400).json({ error: '缺少配置数据' });
+    if (!id) {
+      return res.status(400).json({ error: '缺少 ID 参数' });
     }
 
-    // 解码 base64url 为二进制数据（手动处理兼容性更好）
-    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
-    // 添加 padding
-    const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
-    const compressed = Buffer.from(paddedBase64, 'base64');
+    // 从存储中读取数据
+    const base64Data = global.requestStore.get(id);
 
-    // 使用 pako 解压
+    if (!base64Data) {
+      return res.status(404).json({ error: '配置不存在或已过期（10分钟有效期）' });
+    }
+
+    // 解压数据
+    const compressed = Buffer.from(base64Data, 'base64');
     const decompressed = pako.inflate(compressed, { to: 'string' });
     const config = JSON.parse(decompressed);
+
+    res.json({
+      success: true,
+      config
+    });
+
+  } catch (error) {
+    console.error('获取配置失败:', error);
+    res.status(500).json({
+      error: '获取配置失败: ' + error.message
+    });
+  }
+});
+
+// 代理执行请求（接收 config 对象）
+app.post('/api/proxy-request', async (req, res) => {
+  try {
+    const { config } = req.body;
+
+    if (!config) {
+      return res.status(400).json({ error: '缺少配置数据' });
+    }
 
     // 准备请求体
     let requestBody;
