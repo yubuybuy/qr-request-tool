@@ -1,9 +1,17 @@
 const express = require('express');
 const QRCode = require('qrcode');
-const { v4: uuidv4 } = require('uuid');
 const cors = require('cors');
 const path = require('path');
 const pako = require('pako');
+
+// 简单的 UUID 生成函数（避免 ES Module 问题）
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,7 +31,7 @@ app.post('/api/generate-qr', async (req, res) => {
     }
 
     // 生成唯一 ID
-    const requestId = uuidv4();
+    const requestId = generateUUID();
 
     // 存储请求配置
     const config = {
