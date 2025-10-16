@@ -54,17 +54,34 @@ module.exports = async (req, res) => {
 
     const responseText = await response.text();
     let responseData;
+    let isHTML = false;
 
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = responseText;
+    // 检查是否是 HTML 响应
+    if (responseText.trim().toLowerCase().startsWith('<!doctype') ||
+        responseText.trim().toLowerCase().startsWith('<html')) {
+      isHTML = true;
+      responseData = {
+        error: '服务器返回了错误页面',
+        hint: '可能原因：Cookie 过期、签名失效、请求被拦截',
+        statusCode: response.status,
+        preview: responseText.substring(0, 200) + '...'
+      };
+    } else {
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = {
+          rawText: responseText,
+          hint: '响应不是 JSON 格式'
+        };
+      }
     }
 
     res.json({
-      success: true,
+      success: !isHTML && response.ok,
       status: response.status,
       statusText: response.statusText,
+      isHTML: isHTML,
       data: responseData
     });
 
