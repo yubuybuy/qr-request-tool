@@ -281,9 +281,31 @@
                 // 移除可能的引号
                 cookie = cookie.replace(/^["']|["']$/g, '');
 
+                // 自动识别 API 地址
+                let apiUrl = "https://api.m.jd.com/api"; // 默认地址
+
+                // 从 body 中提取可能的 URL
+                if (body.includes('functionId=')) {
+                    // 检查是否已包含完整 URL
+                    const urlMatch = body.match(/https?:\/\/[^\s&]+/);
+                    if (urlMatch) {
+                        apiUrl = urlMatch[0];
+                    } else {
+                        // 根据 functionId 判断
+                        if (body.includes('client.action')) {
+                            apiUrl = "https://api.m.jd.com/client.action";
+                        } else if (body.includes('functionId') && !body.includes('newBabelAwardCollection')) {
+                            // 其他 functionId 可能用不同的路径
+                            apiUrl = "https://api.m.jd.com/";
+                        }
+                    }
+                }
+
+                console.log('自动识别的 API 地址:', apiUrl);
+
                 // 自动构建请求配置
                 const requestData = {
-                    url: "https://api.m.jd.com/api",
+                    url: apiUrl,
                     method: "POST",
                     headers: {
                         "Content-Type": "application/x-www-form-urlencoded",
