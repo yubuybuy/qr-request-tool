@@ -10,9 +10,8 @@ function generateUUID() {
   });
 }
 
-// Vercel KV 存储（使用 Vercel KV 或简化版本）
-// 由于免费版限制，这里使用临时存储方案
-const requestStore = new Map();
+// 使用全局变量存储（Vercel 会在一定时间内保持热启动）
+global.requestStore = global.requestStore || new Map();
 
 module.exports = async (req, res) => {
   // 允许跨域
@@ -38,7 +37,7 @@ module.exports = async (req, res) => {
     // 生成唯一 ID
     const requestId = generateUUID();
 
-    // 存储请求配置
+    // 存储请求配置（使用压缩）
     const config = {
       url,
       method,
@@ -47,32 +46,33 @@ module.exports = async (req, res) => {
       createdAt: Date.now()
     };
 
-    // 将配置 JSON 字符串化
     const jsonStr = JSON.stringify(config);
-
-    // 使用 pako 压缩数据
     const compressed = pako.deflate(jsonStr);
-
-    // 手动转换为 base64url 编码（兼容性更好）
     const base64 = Buffer.from(compressed).toString('base64');
-    const encodedConfig = base64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+
+    // 存储压缩后的数据
+    global.requestStore.set(requestId, base64);
+
+    // 10分钟后删除
+    setTimeout(() => {
+      global.requestStore.delete(requestId);
+    }, 10 * 60 * 1000);
 
     // 获取当前域名
     const host = req.headers.host;
     const protocol = host.includes('localhost') ? 'http' : 'https';
-    const executeUrl = `${protocol}://${host}/execute.html?data=${encodedConfig}`;
+    const executeUrl = `${protocol}://${host}/execute.html?id=${requestId}`;
 
     console.log('原始数据长度:', jsonStr.length);
     console.log('压缩后长度:', compressed.length);
-    console.log('base64url 长度:', encodedConfig.length);
+    console.log('存储 ID:', requestId);
+    console.log('URL 长度:', executeUrl.length);
 
     // 生成二维码
     const qrCodeDataUrl = await QRCode.toDataURL(executeUrl, {
       width: 300,
-      margin: 2
+      margin: 2,
+      errorCorrectionLevel: 'M'
     });
 
     res.json({
@@ -85,7 +85,6 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error('生成二维码失败:', error);
     console.error('错误堆栈:', error.stack);
-    console.error('请求体:', req.body);
     res.status(500).json({
       error: '生成二维码失败: ' + error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined

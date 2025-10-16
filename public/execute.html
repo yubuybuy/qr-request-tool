@@ -194,53 +194,40 @@
         </button>
     </div>
 
-    <!-- 引入 pako 解压库 - 使用多个 CDN 备用 -->
-    <script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"
-            onerror="this.onerror=null; this.src='https://unpkg.com/pako@2.1.0/dist/pako.min.js'"></script>
-
     <script>
         let requestConfig = null;
 
-        // 从 URL 参数获取编码的配置
-        function loadRequestConfig() {
+        // 从 URL 参数获取 ID 并加载配置
+        async function loadRequestConfig() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const encodedData = urlParams.get('data');
+                const requestId = urlParams.get('id');
 
-                if (!encodedData) {
-                    showError('缺少请求配置数据');
+                if (!requestId) {
+                    showError('缺少请求 ID');
                     return;
                 }
 
-                console.log('开始解码数据...');
+                console.log('加载配置 ID:', requestId);
 
-                // 检查 pako 是否加载
-                if (typeof pako === 'undefined') {
-                    showError('压缩库未加载，请刷新页面重试');
+                // 从服务器获取配置
+                const response = await fetch(`/api/get-config?id=${requestId}`);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showError(error.error || '加载配置失败');
                     return;
                 }
 
-                // 解码 base64url
-                const base64 = encodedData.replace(/-/g, '+').replace(/_/g, '/');
+                const result = await response.json();
 
-                // 添加 padding
-                const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
-
-                // 将 base64 转换为二进制数据
-                const binaryString = atob(paddedBase64);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
+                if (!result.success) {
+                    showError('加载配置失败');
+                    return;
                 }
 
-                console.log('压缩数据长度:', bytes.length);
-
-                // 使用 pako 解压
-                const decompressed = pako.inflate(bytes, { to: 'string' });
-                console.log('解压后数据长度:', decompressed.length);
-
-                requestConfig = JSON.parse(decompressed);
-                console.log('配置解析成功');
+                requestConfig = result.config;
+                console.log('配置加载成功');
 
                 displayRequestInfo();
 
@@ -250,9 +237,8 @@
                 }, 500);
 
             } catch (error) {
-                console.error('解码失败:', error);
-                console.error('错误堆栈:', error.stack);
-                showError('解析请求配置失败: ' + error.message + ' (查看控制台获取详细信息)');
+                console.error('加载配置失败:', error);
+                showError('加载配置失败: ' + error.message);
             }
         }
 
@@ -278,34 +264,14 @@
             try {
                 console.log('准备发送请求...');
 
-                // 将配置 JSON 字符串化
-                const jsonStr = JSON.stringify(requestConfig);
-
-                // 使用 pako 压缩（需要先转换为 Uint8Array）
-                const compressed = pako.deflate(jsonStr);
-
-                // 转换为 base64url
-                let binary = '';
-                compressed.forEach(byte => {
-                    binary += String.fromCharCode(byte);
-                });
-                const base64 = btoa(binary);
-                const encodedConfig = base64
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=/g, '');
-
-                console.log('压缩后数据长度:', compressed.length);
-                console.log('base64url 长度:', encodedConfig.length);
-
-                // 通过后端代理发起请求（避免跨域）
+                // 直接发送配置到 proxy-request
                 const response = await fetch('/api/proxy-request', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        data: encodedConfig
+                        config: requestConfig
                     })
                 });
 

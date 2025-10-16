@@ -1,5 +1,3 @@
-const pako = require('pako');
-
 module.exports = async (req, res) => {
   // 允许跨域
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,21 +13,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { data } = req.body;
+    const { config } = req.body;
 
-    if (!data) {
+    if (!config) {
       return res.status(400).json({ error: '缺少配置数据' });
     }
-
-    // 解码 base64url 为二进制数据（手动处理兼容性更好）
-    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
-    // 添加 padding
-    const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
-    const compressed = Buffer.from(paddedBase64, 'base64');
-
-    // 使用 pako 解压
-    const decompressed = pako.inflate(compressed, { to: 'string' });
-    const config = JSON.parse(decompressed);
 
     // 准备请求体
     let requestBody;
@@ -52,6 +40,12 @@ module.exports = async (req, res) => {
           : JSON.stringify(config.body);
       }
     }
+
+    console.log('代理请求:', {
+      url: config.url,
+      method: config.method,
+      bodyLength: requestBody ? requestBody.length : 0
+    });
 
     // 发起请求
     const response = await fetch(config.url, {
