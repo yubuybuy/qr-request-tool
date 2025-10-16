@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>手机抓包助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #E2231A;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .step h3 {
+            color: #333;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .step p, .step li {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .step ol {
+            margin-left: 20px;
+        }
+
+        .button {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #E2231A 0%, #FF6A00 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            text-decoration: none;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .button:active {
+            opacity: 0.8;
+        }
+
+        .button-secondary {
+            background: #6c757d;
+        }
+
+        .code-box {
+            background: #263238;
+            color: #aed581;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .alert {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 手机抓包助手</h1>
+        <p style="color: #666; margin-bottom: 20px;">在手机上自动提取京东领券数据</p>
+
+        <div class="step">
+            <h3>🎯 方法一：使用书签（推荐）</h3>
+            <ol>
+                <li>长按下面的按钮，选择"添加书签"</li>
+                <li>打开京东活动页面</li>
+                <li>点击刚才保存的书签</li>
+                <li>点击领券按钮</li>
+                <li>会自动提取数据并跳转到工具页面</li>
+            </ol>
+            <a href="javascript:(function(){let captured=false;const orig=window.fetch;window.fetch=function(...args){if(args[0].includes('api.m.jd.com')&&!captured){captured=true;const opts=args[1]||{};const data={cookie:document.cookie,body:opts.body||'',url:args[0]};localStorage.setItem('jd_capture',JSON.stringify(data));alert('✅ 已捕获数据！即将跳转...');setTimeout(()=>{window.location.href='https://你的域名/jd.html?auto=1';},500);}return orig.apply(this,args);};alert('📡 监听已启动！\n现在点击领券按钮');})();" class="button">
+                📌 添加书签（长按我）
+            </a>
+        </div>
+
+        <div class="step">
+            <h3>🔍 方法二：手动抓包</h3>
+            <p>推荐使用抓包 App：</p>
+            <div style="margin: 10px 0;">
+                <strong>iOS:</strong>
+                <ul>
+                    <li>Stream - 简单易用</li>
+                    <li>Thor - 功能强大</li>
+                </ul>
+                <strong>Android:</strong>
+                <ul>
+                    <li>HttpCanary - 免费好用</li>
+                    <li>Packet Capture - 简单直观</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>📋 方法三：浏览器开发者工具</h3>
+            <p>某些手机浏览器支持开发者工具：</p>
+            <ol>
+                <li>使用 <strong>Kiwi Browser</strong>（安卓）或 <strong>Safari</strong>（iOS）</li>
+                <li>打开京东活动页面</li>
+                <li>启用开发者工具</li>
+                <li>查看 Network → 点击领券 → 找到 POST 请求</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>🚀 方法四：直接输入</h3>
+            <button class="button" onclick="openTool()">打开工具填写数据</button>
+            <p style="margin-top: 10px; font-size: 13px; color: #999;">
+                提示：如果你已经从电脑或抓包工具获取了数据，可以直接打开工具填写
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="font-size: 20px; margin-bottom: 15px;">💡 快速教程</h2>
+
+        <div class="alert">
+            <strong>第一次使用？</strong><br>
+            推荐使用<strong>方法一（书签）</strong>，最简单！
+        </div>
+
+        <div class="step">
+            <h3>📱 详细步骤（iOS Safari）</h3>
+            <ol>
+                <li>长按上面的"添加书签"按钮</li>
+                <li>选择"添加书签"</li>
+                <li>保存书签</li>
+                <li>打开京东活动页面（如：京东APP内的H5页面）</li>
+                <li>点击书签栏中刚保存的书签</li>
+                <li>点击页面上的"领取"按钮</li>
+                <li>自动跳转到工具页面，数据已填好</li>
+                <li>点击"生成二维码"</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>📱 详细步骤（Android Chrome）</h3>
+            <ol>
+                <li>长按"添加书签"按钮</li>
+                <li>选择"在新标签页中打开链接"</li>
+                <li>添加到书签</li>
+                <li>打开京东活动页面</li>
+                <li>点击书签</li>
+                <li>点击领券按钮</li>
+                <li>自动跳转并填充数据</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>❓ 常见问题</h3>
+            <p><strong>Q: 为什么点击书签没反应？</strong></p>
+            <p>A: 某些浏览器不支持书签脚本，建议使用 Safari（iOS）或 Chrome（Android）</p>
+
+            <p style="margin-top: 10px;"><strong>Q: 抓不到数据怎么办？</strong></p>
+            <p>A: 使用方法二的抓包 App，更稳定可靠</p>
+
+            <p style="margin-top: 10px;"><strong>Q: 如何查看抓到的数据？</strong></p>
+            <p>A: 书签会自动跳转到工具页面并填充数据</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2 style="font-size: 20px; margin-bottom: 15px;">🎓 抓包 App 使用教程</h2>
+
+        <div class="step">
+            <h3>HttpCanary (Android)</h3>
+            <ol>
+                <li>下载并安装 HttpCanary</li>
+                <li>安装 CA 证书（按 App 提示操作）</li>
+                <li>启动抓包</li>
+                <li>打开京东 App 或浏览器</li>
+                <li>点击领券</li>
+                <li>回到 HttpCanary，停止抓包</li>
+                <li>筛选 <code>api.m.jd.com</code></li>
+                <li>找到 POST 请求</li>
+                <li>查看 Request → Headers → 复制 Cookie</li>
+                <li>查看 Request → Body → 复制完整内容</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Stream (iOS)</h3>
+            <ol>
+                <li>下载 Stream（App Store）</li>
+                <li>按提示安装证书</li>
+                <li>开始抓包</li>
+                <li>打开京东，点击领券</li>
+                <li>停止抓包</li>
+                <li>筛选 <code>api.m.jd.com</code></li>
+                <li>查看 POST 请求详情</li>
+                <li>复制 Cookie 和 Body</li>
+            </ol>
+        </div>
+
+        <button class="button" onclick="openTool()">📱 现在去填写数据</button>
+    </div>
+
+    <script>
+        function openTool() {
+            // 检查是否有自动填充的数据
+            const captured = localStorage.getItem('jd_capture');
+            if (captured) {
+                window.location.href = 'jd.html?auto=1';
+            } else {
+                window.location.href = 'jd.html';
+            }
+        }
+
+        // 如果 URL 中有 auto 参数，显示提示
+        if (window.location.search.includes('auto=1')) {
+            const captured = localStorage.getItem('jd_capture');
+            if (captured) {
+                alert('✅ 检测到已捕获的数据！\n即将自动填充...');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -220,6 +220,30 @@
         const errorDiv = document.getElementById('error');
         const successDiv = document.getElementById('success');
 
+        // 页面加载时检查是否有自动填充数据
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('auto') === '1') {
+                const captured = localStorage.getItem('jd_capture');
+                if (captured) {
+                    try {
+                        const data = JSON.parse(captured);
+                        document.getElementById('cookie').value = data.cookie || '';
+                        document.getElementById('body').value = data.body || '';
+
+                        // 清除已使用的数据
+                        localStorage.removeItem('jd_capture');
+
+                        // 显示提示
+                        successDiv.textContent = '✅ 已自动填充数据！请检查后点击生成';
+                        successDiv.classList.add('show');
+                    } catch (e) {
+                        console.error('自动填充失败:', e);
+                    }
+                }
+            }
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -229,7 +253,7 @@
             successDiv.classList.remove('show');
 
             // 获取表单数据
-            const cookie = document.getElementById('cookie').value.trim();
+            let cookie = document.getElementById('cookie').value.trim();
             const body = document.getElementById('body').value.trim();
 
             if (!cookie || !body) {
@@ -239,6 +263,24 @@
             }
 
             try {
+                // 自动清理 Cookie 格式
+                // 如果用户粘贴了 JSON 格式的 Cookie，自动提取
+                if (cookie.startsWith('{') || cookie.startsWith('"')) {
+                    try {
+                        const parsed = JSON.parse(cookie);
+                        if (typeof parsed === 'string') {
+                            cookie = parsed;
+                        } else if (parsed.Cookie) {
+                            cookie = parsed.Cookie;
+                        }
+                    } catch {
+                        // 如果不是 JSON，保持原样
+                    }
+                }
+
+                // 移除可能的引号
+                cookie = cookie.replace(/^["']|["']$/g, '');
+
                 // 自动构建请求配置
                 const requestData = {
                     url: "https://api.m.jd.com/api",

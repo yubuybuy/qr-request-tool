@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京东抓包助手</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #E2231A;
+        }
+        .step {
+            background: #fff3e0;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+        }
+        .code {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        button {
+            background: linear-gradient(135deg, #E2231A 0%, #FF6A00 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .bookmarklet {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 京东抓包助手</h1>
+        <p>两种方式帮你自动提取 API 数据</p>
+
+        <div class="step">
+            <h3>方式 1：书签工具（推荐）</h3>
+            <p>将下面的链接拖到浏览器书签栏：</p>
+            <a href="javascript:(function(){const reqs=[];const oldFetch=window.fetch;window.fetch=function(...args){if(args[0].includes('api.m.jd.com')){const req={url:args[0],options:args[1]};reqs.push(req);console.log('捕获请求:',req);}return oldFetch.apply(this,args);};const oldXHR=window.XMLHttpRequest.prototype.open;window.XMLHttpRequest.prototype.open=function(method,url,...rest){if(url.includes('api.m.jd.com')){console.log('捕获XHR:',method,url);}return oldXHR.apply(this,[method,url,...rest]);};alert('抓包已启动！现在点击领券按钮，然后查看控制台(F12)');})();" class="bookmarklet">
+                📌 拖我到书签栏
+            </a>
+
+            <p><strong>使用方法：</strong></p>
+            <ol>
+                <li>将上面的链接拖到书签栏</li>
+                <li>打开京东活动页面</li>
+                <li>点击书签</li>
+                <li>点击领券按钮</li>
+                <li>按 F12 查看控制台，会显示抓到的请求</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>方式 2：控制台脚本</h3>
+            <p>在京东活动页面按 F12，粘贴以下代码到控制台：</p>
+            <div class="code">// 监听所有请求
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    const url = args[0];
+    const options = args[1] || {};
+
+    if (url.includes('api.m.jd.com')) {
+        console.log('%c捕获到 API 请求！', 'color: #4CAF50; font-size: 16px; font-weight: bold');
+        console.log('URL:', url);
+        console.log('Method:', options.method || 'GET');
+        console.log('Headers:', options.headers);
+        console.log('Body:', options.body);
+        console.log('---完整数据---');
+        console.log({
+            url: url,
+            method: options.method || 'POST',
+            headers: options.headers,
+            body: options.body
+        });
+    }
+
+    return originalFetch.apply(this, args);
+};
+
+console.log('✅ 抓包脚本已启动！现在点击领券按钮...');
+            </div>
+            <button onclick="copyScript()">📋 复制脚本</button>
+        </div>
+
+        <div class="step">
+            <h3>方式 3：一键自动填充</h3>
+            <p>抓到数据后，使用这个脚本自动填充到工具：</p>
+            <div class="code">// 在控制台执行，自动打开工具并填充数据
+const data = {
+    cookie: document.cookie,
+    body: '粘贴抓到的 body 数据'
+};
+
+// 打开工具页面
+const win = window.open('你的工具地址/jd.html', '_blank');
+
+// 等待页面加载后填充
+setTimeout(() => {
+    win.document.getElementById('cookie').value = data.cookie;
+    win.document.getElementById('body').value = data.body;
+}, 1000);
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>📱 手机端自动抓包</h3>
+            <p>推荐工具：</p>
+            <ul>
+                <li><strong>Stream</strong>（iOS）- 自动抓取所有请求</li>
+                <li><strong>HttpCanary</strong>（Android）- 自动识别 API</li>
+                <li><strong>Thor</strong>（iOS）- 支持过滤规则</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function copyScript() {
+            const script = `// 监听所有请求
+const originalFetch = window.fetch;
+window.fetch = function(...args) {
+    const url = args[0];
+    const options = args[1] || {};
+
+    if (url.includes('api.m.jd.com')) {
+        console.log('%c捕获到 API 请求！', 'color: #4CAF50; font-size: 16px; font-weight: bold');
+        console.log('URL:', url);
+        console.log('Method:', options.method || 'GET');
+        console.log('Headers:', options.headers);
+        console.log('Body:', options.body);
+        console.log('---完整数据---');
+        console.log({
+            url: url,
+            method: options.method || 'POST',
+            headers: options.headers,
+            body: options.body
+        });
+    }
+
+    return originalFetch.apply(this, args);
+};
+
+console.log('✅ 抓包脚本已启动！现在点击领券按钮...');`;
+
+            navigator.clipboard.writeText(script).then(() => {
+                alert('✅ 脚本已复制！\n\n在京东页面按 F12 → Console → 粘贴 → 回车');
+            });
+        }
+    </script>
+</body>
+</html>
