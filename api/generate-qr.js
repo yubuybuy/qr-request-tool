@@ -1,5 +1,6 @@
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
+const pako = require('pako');
 
 // Vercel KV 存储（使用 Vercel KV 或简化版本）
 // 由于免费版限制，这里使用临时存储方案
@@ -38,8 +39,14 @@ module.exports = async (req, res) => {
       createdAt: Date.now()
     };
 
-    // 将配置编码到 URL 中（因为 Vercel Serverless 无状态）
-    const encodedConfig = Buffer.from(JSON.stringify(config)).toString('base64url');
+    // 将配置 JSON 字符串化
+    const jsonStr = JSON.stringify(config);
+
+    // 使用 pako 压缩数据
+    const compressed = pako.deflate(jsonStr);
+
+    // 转换为 base64url 编码
+    const encodedConfig = Buffer.from(compressed).toString('base64url');
 
     // 获取当前域名
     const host = req.headers.host;

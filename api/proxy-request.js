@@ -1,3 +1,5 @@
+const pako = require('pako');
+
 module.exports = async (req, res) => {
   // 允许跨域
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,9 +21,12 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: '缺少配置数据' });
     }
 
-    // 解码配置
-    const configJson = Buffer.from(data, 'base64url').toString('utf-8');
-    const config = JSON.parse(configJson);
+    // 解码 base64url 为二进制数据
+    const compressed = Buffer.from(data, 'base64url');
+
+    // 使用 pako 解压
+    const decompressed = pako.inflate(compressed, { to: 'string' });
+    const config = JSON.parse(decompressed);
 
     // 准备请求体
     let requestBody;
