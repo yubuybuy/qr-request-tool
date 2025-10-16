@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>执行请求中...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .request-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .request-info h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 80px;
+        }
+
+        .info-value {
+            color: #333;
+            word-break: break-all;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-box.show {
+            display: block;
+        }
+
+        .result-box h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .result-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>请求执行</h1>
+
+        <div class="status loading" id="status">
+            <div class="spinner"></div>
+            <p>正在加载请求配置...</p>
+        </div>
+
+        <div class="request-info" id="requestInfo" style="display: none;">
+            <h3>请求信息</h3>
+            <div class="info-row">
+                <span class="info-label">请求方法:</span>
+                <span class="info-value" id="method"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">目标地址:</span>
+                <span class="info-value" id="targetUrl"></span>
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>响应结果</h3>
+            <div class="result-content" id="resultContent"></div>
+            <button class="btn btn-primary" onclick="executeRequest()">重新执行请求</button>
+        </div>
+
+        <button class="btn btn-secondary" id="executeBtn" style="display: none;" onclick="executeRequest()">
+            执行请求
+        </button>
+    </div>
+
+    <script>
+        let requestConfig = null;
+
+        // 从 URL 获取请求 ID
+        const pathParts = window.location.pathname.split('/');
+        const requestId = pathParts[pathParts.length - 1];
+
+        async function loadRequestConfig() {
+            try {
+                const response = await fetch(`/api/request/${requestId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    requestConfig = result.config;
+                    displayRequestInfo();
+
+                    // 自动执行请求
+                    setTimeout(() => {
+                        executeRequest();
+                    }, 500);
+                } else {
+                    showError('请求配置不存在或已过期');
+                }
+            } catch (error) {
+                showError('加载请求配置失败: ' + error.message);
+            }
+        }
+
+        function displayRequestInfo() {
+            document.getElementById('method').textContent = requestConfig.method;
+            document.getElementById('targetUrl').textContent = requestConfig.url;
+            document.getElementById('requestInfo').style.display = 'block';
+        }
+
+        async function executeRequest() {
+            if (!requestConfig) {
+                showError('请求配置不存在');
+                return;
+            }
+
+            // 显示加载状态
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status loading';
+            statusDiv.innerHTML = '<div class="spinner"></div><p>正在发起请求...</p>';
+
+            document.getElementById('resultBox').classList.remove('show');
+
+            try {
+                // 通过后端代理发起请求（避免跨域）
+                const response = await fetch(`/api/proxy-request/${requestId}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 显示结果
+                    if (result.status >= 200 && result.status < 300) {
+                        statusDiv.className = 'status success';
+                        statusDiv.innerHTML = '<p>✓ 请求执行成功</p>';
+                    } else {
+                        statusDiv.className = 'status error';
+                        statusDiv.innerHTML = `<p>✗ 请求失败 (${result.status})</p>`;
+                    }
+
+                    // 格式化显示结果
+                    const resultContent = document.getElementById('resultContent');
+                    if (typeof result.data === 'object') {
+                        resultContent.textContent = JSON.stringify(result.data, null, 2);
+                    } else {
+                        resultContent.textContent = result.data;
+                    }
+
+                    document.getElementById('resultBox').classList.add('show');
+                } else {
+                    showError(result.error || '请求执行失败');
+
+                    const resultContent = document.getElementById('resultContent');
+                    resultContent.textContent = `错误: ${result.error}`;
+                    document.getElementById('resultBox').classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('请求失败:', error);
+                showError('请求执行失败: ' + error.message);
+
+                // 仍然显示错误信息
+                const resultContent = document.getElementById('resultContent');
+                resultContent.textContent = `错误: ${error.message}`;
+                document.getElementById('resultBox').classList.add('show');
+            }
+        }
+
+        function showError(message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status error';
+            statusDiv.innerHTML = `<p>✗ ${message}</p>`;
+        }
+
+        // 页面加载时执行
+        loadRequestConfig();
+    </script>
+</body>
+</html>

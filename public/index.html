@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码请求工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .qr-result {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .qr-result.show {
+            display: block;
+        }
+
+        .qr-result img {
+            max-width: 300px;
+            margin: 20px auto;
+            border: 4px solid white;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .qr-result p {
+            color: #666;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .qr-result .url {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            word-break: break-all;
+            font-size: 12px;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>二维码请求工具</h1>
+
+        <form id="requestForm">
+            <div class="form-group">
+                <label for="url">目标 API 地址 *</label>
+                <input type="url" id="url" placeholder="https://api.example.com/endpoint" required>
+            </div>
+
+            <div class="form-group">
+                <label for="method">请求方法</label>
+                <select id="method">
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="PATCH">PATCH</option>
+                    <option value="DELETE">DELETE</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="headers">请求头 (JSON 格式)</label>
+                <textarea id="headers" placeholder='{"Content-Type": "application/json"}'>{
+  "Content-Type": "application/json"
+}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="body">请求体 *</label>
+                <textarea id="body" placeholder='可以是 JSON 或 URL 编码字符串' required></textarea>
+                <small style="color: #666; font-size: 12px;">支持 JSON 格式或 URL 编码字符串（如 key1=value1&key2=value2）</small>
+            </div>
+
+            <button type="submit">生成二维码</button>
+        </form>
+
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+
+        <div class="qr-result" id="qrResult">
+            <h2>扫描二维码</h2>
+            <img id="qrImage" src="" alt="二维码">
+            <p>使用微信扫描此二维码</p>
+            <p>扫码后将自动发起请求并显示结果</p>
+            <div class="url" id="executeUrl"></div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('requestForm');
+        const qrResult = document.getElementById('qrResult');
+        const qrImage = document.getElementById('qrImage');
+        const executeUrl = document.getElementById('executeUrl');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 重置状态
+            qrResult.classList.remove('show');
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            // 获取表单数据
+            const url = document.getElementById('url').value;
+            const method = document.getElementById('method').value;
+            const headersText = document.getElementById('headers').value;
+            const bodyText = document.getElementById('body').value;
+
+            try {
+                // 清理并验证 JSON 格式
+                let headers = {};
+                if (headersText.trim()) {
+                    try {
+                        // 先尝试直接解析
+                        headers = JSON.parse(headersText);
+                    } catch (e) {
+                        // 如果失败，尝试清理后再解析
+                        // 先找出所有的键值对
+                        const cleaned = headersText
+                            // 移除 JSON 外层的花括号和空白
+                            .replace(/^\s*\{\s*/, '{')
+                            .replace(/\s*\}\s*$/, '}')
+                            // 处理换行
+                            .split('\n')
+                            .map(line => line.trim())
+                            .join(' ')
+                            // 清理多余空格
+                            .replace(/\s+/g, ' ')
+                            // 修复可能的格式问题
+                            .replace(/,\s*}/g, '}')
+                            .replace(/,\s*,/g, ',');
+
+                        headers = JSON.parse(cleaned);
+                    }
+                }
+
+                let body = bodyText.trim();
+                // 尝试解析为 JSON，如果失败则当作字符串
+                try {
+                    const parsedBody = JSON.parse(bodyText);
+                    body = parsedBody;
+                } catch {
+                    // 保持原始字符串格式（可能是 URL 编码）
+                    body = bodyText;
+                }
+
+                // 发送请求到后端
+                const response = await fetch('/api/generate-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url,
+                        method,
+                        headers,
+                        body
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 显示二维码
+                    qrImage.src = result.qrCode;
+                    executeUrl.textContent = result.executeUrl;
+                    qrResult.classList.add('show');
+                    successDiv.textContent = '二维码生成成功！';
+                    successDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = result.error || '生成失败';
+                    errorDiv.classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('错误:', error);
+                errorDiv.textContent = '错误: ' + error.message;
+                errorDiv.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>

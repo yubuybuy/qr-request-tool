@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京东领券二维码生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #E2231A 0%, #FF6A00 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #E2231A;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #E2231A;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #E2231A 0%, #FF6A00 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .qr-result {
+            display: none;
+            text-align: center;
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .qr-result.show {
+            display: block;
+        }
+
+        .qr-result img {
+            max-width: 300px;
+            margin: 20px auto;
+            border: 4px solid white;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .qr-result p {
+            color: #666;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .steps {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #e65100;
+        }
+
+        .steps ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .steps li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>京东领券二维码</h1>
+        <p class="subtitle">简单快速 · 一键生成 · 微信扫码领券</p>
+
+        <div class="steps">
+            <strong>📱 使用步骤：</strong>
+            <ol>
+                <li>在京东 App 或网页中，找到领券的请求数据</li>
+                <li>复制 Cookie 和完整的 Body 数据</li>
+                <li>粘贴到下方输入框，点击生成</li>
+                <li>用微信扫描生成的二维码即可领券</li>
+            </ol>
+        </div>
+
+        <form id="jdForm">
+            <div class="form-group">
+                <label for="cookie">Cookie *</label>
+                <textarea id="cookie" placeholder="粘贴完整的 Cookie 字符串..." required></textarea>
+                <div class="hint">从浏览器开发者工具中复制 Cookie</div>
+            </div>
+
+            <div class="form-group">
+                <label for="body">请求数据 (Body) *</label>
+                <textarea id="body" placeholder="粘贴完整的 Body 数据，通常是 body=...&screen=... 格式" required style="min-height: 150px;"></textarea>
+                <div class="hint">从抓包工具或开发者工具中复制完整的请求体</div>
+            </div>
+
+            <button type="submit">🎁 生成领券二维码</button>
+        </form>
+
+        <div class="error" id="error"></div>
+        <div class="success" id="success"></div>
+
+        <div class="qr-result" id="qrResult">
+            <h2>✨ 扫码领券</h2>
+            <img id="qrImage" src="" alt="二维码">
+            <p>📱 使用微信扫描此二维码</p>
+            <p>🎉 扫码后自动领取优惠券</p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('jdForm');
+        const qrResult = document.getElementById('qrResult');
+        const qrImage = document.getElementById('qrImage');
+        const errorDiv = document.getElementById('error');
+        const successDiv = document.getElementById('success');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // 重置状态
+            qrResult.classList.remove('show');
+            errorDiv.classList.remove('show');
+            successDiv.classList.remove('show');
+
+            // 获取表单数据
+            const cookie = document.getElementById('cookie').value.trim();
+            const body = document.getElementById('body').value.trim();
+
+            if (!cookie || !body) {
+                errorDiv.textContent = '请填写 Cookie 和 Body 数据';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            try {
+                // 自动构建请求配置
+                const requestData = {
+                    url: "https://api.m.jd.com/api",
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.38",
+                        "Referer": "https://h5static.m.jd.com/",
+                        "Origin": "https://h5static.m.jd.com",
+                        "Cookie": cookie
+                    },
+                    body: body
+                };
+
+                // 发送请求到后端
+                const response = await fetch('/api/generate-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // 显示二维码
+                    qrImage.src = result.qrCode;
+                    qrResult.classList.add('show');
+                    successDiv.textContent = '✓ 二维码生成成功！快用微信扫码吧';
+                    successDiv.classList.add('show');
+                } else {
+                    errorDiv.textContent = result.error || '生成失败';
+                    errorDiv.classList.add('show');
+                }
+
+            } catch (error) {
+                console.error('错误:', error);
+                errorDiv.textContent = '错误: ' + error.message;
+                errorDiv.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>
