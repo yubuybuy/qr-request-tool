@@ -21,8 +21,11 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: '缺少配置数据' });
     }
 
-    // 解码 base64url 为二进制数据
-    const compressed = Buffer.from(data, 'base64url');
+    // 解码 base64url 为二进制数据（手动处理兼容性更好）
+    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+    // 添加 padding
+    const paddedBase64 = base64 + '='.repeat((4 - base64.length % 4) % 4);
+    const compressed = Buffer.from(paddedBase64, 'base64');
 
     // 使用 pako 解压
     const decompressed = pako.inflate(compressed, { to: 'string' });

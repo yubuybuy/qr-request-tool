@@ -45,13 +45,21 @@ module.exports = async (req, res) => {
     // 使用 pako 压缩数据
     const compressed = pako.deflate(jsonStr);
 
-    // 转换为 base64url 编码
-    const encodedConfig = Buffer.from(compressed).toString('base64url');
+    // 手动转换为 base64url 编码（兼容性更好）
+    const base64 = Buffer.from(compressed).toString('base64');
+    const encodedConfig = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
 
     // 获取当前域名
     const host = req.headers.host;
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const executeUrl = `${protocol}://${host}/execute.html?data=${encodedConfig}`;
+
+    console.log('原始数据长度:', jsonStr.length);
+    console.log('压缩后长度:', compressed.length);
+    console.log('base64url 长度:', encodedConfig.length);
 
     // 生成二维码
     const qrCodeDataUrl = await QRCode.toDataURL(executeUrl, {
