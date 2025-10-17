@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>h5st 调试工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .section h2 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .step {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .output {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #155724;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            color: #0c5460;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .result-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .result-item strong {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 京东 h5st 调试工具</h1>
+        <p class="subtitle">快速验证 h5st 签名生成机制</p>
+
+        <div class="warning">
+            <strong>⚠️ 使用说明：</strong><br>
+            1. 这个工具需要在<strong>京东活动页面</strong>的控制台中运行<br>
+            2. 不要在本页面运行，本页面只是提供脚本和教程<br>
+            3. 建议使用 Chrome/Edge 浏览器的开发者工具
+        </div>
+
+        <!-- 第一步 -->
+        <div class="section">
+            <h2>📋 步骤 1: 打开京东活动页面</h2>
+            <div class="step">
+                <h3>打开你要领券的京东活动页面</h3>
+                <p>例如：https://h5static.m.jd.com/mall/active/xxx/index.html</p>
+                <p style="margin-top: 10px;">
+                    <a href="https://pro.m.jd.com/mall/active/3n9HX8v8vDAasieUvB4k3CiT8vhE/index.html"
+                       target="_blank"
+                       style="color: #667eea; text-decoration: none;">
+                        📱 点击这里打开一个示例活动页面（新窗口）
+                    </a>
+                </p>
+            </div>
+        </div>
+
+        <!-- 第二步 -->
+        <div class="section">
+            <h2>🛠️ 步骤 2: 打开开发者工具</h2>
+            <div class="step">
+                <h3>按 F12 或右键选择"检查"</h3>
+                <p>Windows: <code>F12</code> 或 <code>Ctrl + Shift + I</code></p>
+                <p>Mac: <code>Cmd + Option + I</code></p>
+                <p style="margin-top: 10px; color: #666;">打开后切换到 <strong>Console（控制台）</strong> 标签</p>
+            </div>
+        </div>
+
+        <!-- 第三步 -->
+        <div class="section">
+            <h2>💻 步骤 3: 运行调试脚本</h2>
+
+            <div class="step">
+                <h3>方法 A: 自动查找 h5st 生成函数（推荐）</h3>
+                <p>在控制台粘贴并运行以下脚本：</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode('scriptA')">复制</button>
+                    <pre id="scriptA">// 京东 h5st 自动查找脚本
+(function() {
+    console.log('🔍 开始搜索 h5st 生成函数...\n');
+
+    const results = {
+        possibleFunctions: [],
+        h5stInWindow: [],
+        localStorageTokens: [],
+        cookies: []
+    };
+
+    // 1. 搜索 window 对象中可能的函数
+    console.log('📌 步骤 1: 搜索全局函数...');
+    const keywords = ['h5st', 'getH5st', 'H5ST', 'getToken', 'sign', 'signature'];
+
+    for (let key in window) {
+        try {
+            const value = window[key];
+            if (typeof value === 'function') {
+                const funcStr = value.toString();
+                // 检查是否包含 h5st 相关关键字
+                if (keywords.some(keyword =>
+                    key.toLowerCase().includes(keyword.toLowerCase()) ||
+                    funcStr.includes('h5st')
+                )) {
+                    results.possibleFunctions.push({
+                        name: key,
+                        preview: funcStr.substring(0, 200) + '...'
+                    });
+                    console.log(`  ✓ 找到可能的函数: ${key}`);
+                }
+            } else if (key.includes('h5st') || key.includes('H5ST')) {
+                results.h5stInWindow.push({
+                    key: key,
+                    type: typeof value,
+                    value: JSON.stringify(value).substring(0, 100)
+                });
+            }
+        } catch (e) {
+            // 某些属性可能无法访问
+        }
+    }
+
+    // 2. 检查 localStorage
+    console.log('\n📌 步骤 2: 检查 localStorage...');
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('h5st') || key.includes('token') || key.includes('fp'))) {
+            const value = localStorage.getItem(key);
+            results.localStorageTokens.push({
+                key: key,
+                value: value ? value.substring(0, 100) : 'null'
+            });
+            console.log(`  ✓ 找到相关数据: ${key}`);
+        }
+    }
+
+    // 3. 检查 cookies
+    console.log('\n📌 步骤 3: 检查 cookies...');
+    const cookieStr = document.cookie;
+    const cookiePairs = cookieStr.split('; ');
+    cookiePairs.forEach(pair => {
+        const [key, value] = pair.split('=');
+        if (key && (key.includes('h5st') || key.includes('token') ||
+                    key.includes('fp') || key.includes('shsh'))) {
+            results.cookies.push({
+                key: key,
+                value: value ? value.substring(0, 100) : 'null'
+            });
+            console.log(`  ✓ 找到相关 Cookie: ${key}`);
+        }
+    });
+
+    // 4. 尝试查找网络请求中的 h5st
+    console.log('\n📌 步骤 4: 监听下一个网络请求...');
+    console.log('  💡 提示: 请在页面上点击"领取"按钮，我会自动捕获请求');
+
+    // 拦截 fetch
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        const url = args[0];
+        if (typeof url === 'string' && url.includes('h5st')) {
+            console.log('\n  ✓ 捕获到包含 h5st 的请求:', url);
+
+            // 提取 h5st 参数
+            try {
+                const urlObj = new URL(url, window.location.origin);
+                const h5stParam = urlObj.searchParams.get('h5st');
+                if (h5stParam) {
+                    console.log('  📦 h5st 参数:', h5stParam);
+
+                    // 解析 h5st 结构
+                    const parts = h5stParam.split(';');
+                    console.log('  📊 h5st 结构分析:');
+                    console.log('    - 时间戳:', parts[0]);
+                    console.log('    - 版本号:', parts[1]);
+                    console.log('    - appId:', parts[2]);
+                    console.log('    - Token:', parts[3]?.substring(0, 50) + '...');
+                }
+            } catch (e) {
+                console.error('  ✗ 解析失败:', e);
+            }
+        }
+        return originalFetch.apply(this, args);
+    };
+
+    // 拦截 XMLHttpRequest
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        if (typeof url === 'string' && url.includes('h5st')) {
+            console.log('\n  ✓ 捕获到包含 h5st 的 XHR 请求:', url);
+        }
+        return originalOpen.apply(this, [method, url, ...rest]);
+    };
+
+    // 5. 输出结果
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 搜索结果汇总');
+    console.log('='.repeat(60));
+
+    console.log('\n🔧 可能的 h5st 生成函数:');
+    if (results.possibleFunctions.length > 0) {
+        results.possibleFunctions.forEach((func, i) => {
+            console.log(`  ${i + 1}. ${func.name}`);
+            console.log(`     预览: ${func.preview}\n`);
+        });
+    } else {
+        console.log('  ⚠️ 未找到明显的生成函数');
+    }
+
+    console.log('\n💾 localStorage 中的相关数据:');
+    if (results.localStorageTokens.length > 0) {
+        results.localStorageTokens.forEach(item => {
+            console.log(`  - ${item.key}: ${item.value}`);
+        });
+    } else {
+        console.log('  ⚠️ 未找到相关数据');
+    }
+
+    console.log('\n🍪 Cookie 中的相关数据:');
+    if (results.cookies.length > 0) {
+        results.cookies.forEach(item => {
+            console.log(`  - ${item.key}: ${item.value}`);
+        });
+    } else {
+        console.log('  ⚠️ 未找到相关 Cookie');
+    }
+
+    console.log('\n' + '='.repeat(60));
+    console.log('💡 下一步操作建议:');
+    console.log('='.repeat(60));
+    console.log('1. 如果找到了可能的函数，尝试调用它们');
+    console.log('2. 在页面上点击"领取"按钮，观察控制台输出');
+    console.log('3. 切换到 Network 标签，查看实际的请求参数');
+    console.log('4. 在 Sources 标签中搜索 "h5st" 定位生成代码');
+    console.log('='.repeat(60));
+
+    // 返回结果供进一步使用
+    window.h5stDebugResults = results;
+    console.log('\n✅ 结果已保存到 window.h5stDebugResults');
+
+})();</pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>方法 B: 监听按钮点击（实时捕获）</h3>
+                <p>如果方法 A 没找到，运行这个脚本后点击页面上的"领取"按钮：</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode('scriptB')">复制</button>
+                    <pre id="scriptB">// 监听所有点击事件，捕获 h5st 生成过程
+(function() {
+    console.log('🎯 开始监听点击事件...\n');
+    console.log('💡 现在点击页面上的"领取"按钮\n');
+
+    // 保存原始的 fetch 和 XHR
+    const originalFetch = window.fetch;
+    const originalXHRSend = XMLHttpRequest.prototype.send;
+
+    let requestCount = 0;
+
+    // 拦截 fetch
+    window.fetch = function(...args) {
+        requestCount++;
+        const requestId = requestCount;
+
+        console.log(`\n📤 请求 #${requestId} [Fetch]`);
+        console.log('URL:', args[0]);
+
+        if (args[1] && args[1].body) {
+            try {
+                const body = args[1].body;
+                console.log('Body:', body);
+
+                // 尝试解析 body 中的 h5st
+                if (typeof body === 'string' && body.includes('h5st=')) {
+                    const h5stMatch = body.match(/h5st=([^&]+)/);
+                    if (h5stMatch) {
+                        console.log('\n🎉 找到 h5st 签名！');
+                        console.log('完整签名:', h5stMatch[1]);
+
+                        const parts = h5stMatch[1].split(';');
+                        console.log('\n结构分析:');
+                        console.log('  时间戳:', parts[0]);
+                        console.log('  版本号:', parts[1]);
+                        console.log('  appId:', parts[2]);
+                        console.log('  签名数据:', parts[3]);
+                    }
+                }
+            } catch (e) {
+                console.error('解析 body 失败:', e);
+            }
+        }
+
+        return originalFetch.apply(this, args);
+    };
+
+    // 拦截 XHR
+    XMLHttpRequest.prototype.send = function(body) {
+        requestCount++;
+        const requestId = requestCount;
+
+        console.log(`\n📤 请求 #${requestId} [XHR]`);
+        console.log('URL:', this._url);
+        console.log('Method:', this._method);
+
+        if (body) {
+            console.log('Body:', body);
+
+            if (typeof body === 'string' && body.includes('h5st=')) {
+                const h5stMatch = body.match(/h5st=([^&]+)/);
+                if (h5stMatch) {
+                    console.log('\n🎉 找到 h5st 签名！');
+                    console.log('完整签名:', h5stMatch[1]);
+
+                    const parts = h5stMatch[1].split(';');
+                    console.log('\n结构分析:');
+                    console.log('  时间戳:', parts[0]);
+                    console.log('  版本号:', parts[1]);
+                    console.log('  appId:', parts[2]);
+                    console.log('  签名数据:', parts[3]);
+                }
+            }
+        }
+
+        return originalXHRSend.apply(this, arguments);
+    };
+
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        this._method = method;
+        this._url = url;
+        return originalOpen.apply(this, [method, url, ...rest]);
+    };
+
+    console.log('✅ 监听已激活，等待请求...');
+
+})();</pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>方法 C: 直接搜索源码（深度调试）</h3>
+                <ol style="margin-left: 20px; color: #666;">
+                    <li>打开开发者工具的 <strong>Sources</strong> 标签</li>
+                    <li>按 <code>Ctrl+Shift+F</code> (Mac: <code>Cmd+Shift+F</code>) 打开全局搜索</li>
+                    <li>搜索关键字: <code>h5st</code> 或 <code>getH5st</code></li>
+                    <li>找到生成函数后，可以设置断点调试</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 第四步 -->
+        <div class="section">
+            <h2>📊 步骤 4: 分析结果</h2>
+
+            <div class="info">
+                <strong>✅ 如果成功找到 h5st 签名，你会看到类似这样的结构：</strong>
+                <div class="code-block" style="margin-top: 10px;">
+                    <pre>h5st=20251016160158044;36mwzzm9mh6qdqq7;35fa0;tk03w6dc41ada18n...
+
+结构分析:
+  - 时间戳: 20251016160158044
+  - 版本号: 36mwzzm9mh6qdqq7  ← 这是关键！
+  - appId: 35fa0
+  - 签名数据: tk03w6dc41ada18n...</pre>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>关键信息记录</h3>
+                <p>找到签名后，请记录以下信息：</p>
+                <textarea id="findings" placeholder="在这里粘贴你的发现...
+
+例如：
+1. 找到的函数名: window.getH5st
+2. 版本号: 36mwzzm9mh6qdqq7
+3. 需要的参数: appId, functionId, body, timestamp
+4. 返回值: 完整的 h5st 字符串
+
+你还可以粘贴找到的函数代码..."></textarea>
+            </div>
+        </div>
+
+        <!-- 第五步 -->
+        <div class="section">
+            <h2>🧪 步骤 5: 测试生成函数</h2>
+
+            <div class="step">
+                <h3>如果找到了生成函数，尝试手动调用它</h3>
+                <p>例如，如果找到函数叫 <code>window.getH5st</code>，在控制台运行：</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyCode('testScript')">复制</button>
+                    <pre id="testScript">// 测试 h5st 生成函数
+// 假设函数名是 window.getH5st (实际名称可能不同)
+
+// 准备参数
+const testParams = {
+    appId: '35fa0',
+    functionId: 'newBabelAwardCollection',
+    body: JSON.stringify({
+        activityId: '2v9TSJ6S56BkdN6XUwweiJnUsLLL'
+    }),
+    timestamp: Date.now()
+};
+
+// 尝试调用（函数名需要根据实际情况修改）
+try {
+    // 方式1: 如果是全局函数
+    if (typeof window.getH5st === 'function') {
+        const result = window.getH5st(testParams);
+        console.log('✅ 生成成功!');
+        console.log('h5st:', result);
+    }
+
+    // 方式2: 如果在某个对象下
+    if (window.JDH5ST && typeof window.JDH5ST.getH5st === 'function') {
+        const result = window.JDH5ST.getH5st(testParams);
+        console.log('✅ 生成成功!');
+        console.log('h5st:', result);
+    }
+
+    // 方式3: 如果需要异步
+    if (typeof window.getH5stAsync === 'function') {
+        window.getH5stAsync(testParams).then(result => {
+            console.log('✅ 异步生成成功!');
+            console.log('h5st:', result);
+        });
+    }
+
+} catch (error) {
+    console.error('❌ 调用失败:', error);
+    console.log('💡 提示: 可能需要不同的参数格式');
+}</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果反馈 -->
+        <div class="section">
+            <h2>📝 结果反馈</h2>
+            <div class="success">
+                <strong>🎉 找到生成函数了？</strong><br>
+                请把以下信息发给我：
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>函数名称（例如：window.getH5st）</li>
+                    <li>函数需要的参数</li>
+                    <li>函数返回值示例</li>
+                    <li>（可选）函数的完整代码</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <strong>❓ 没找到？试试这些方法：</strong><br>
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    <li>在 Network 标签中查看实际请求，看 h5st 是在哪里生成的</li>
+                    <li>在 Sources 标签中设置 XHR/Fetch 断点</li>
+                    <li>搜索 "h5st" 关键字，查看所有包含它的 JS 文件</li>
+                    <li>查找 "getSignature"、"sign"、"encrypt" 等可疑函数</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 常见问题 -->
+        <div class="section">
+            <h2>❓ 常见问题</h2>
+
+            <div class="result-item">
+                <strong>Q: 脚本运行后没有任何输出？</strong><br>
+                A: 确保你是在<strong>京东活动页面</strong>运行，不是在本页面。打开京东页面 → F12 → Console → 粘贴脚本
+            </div>
+
+            <div class="result-item">
+                <strong>Q: 提示 "找不到相关函数"？</strong><br>
+                A: 正常，京东的函数可能被混淆了。尝试方法 B（监听点击），或者在 Sources 中手动搜索
+            </div>
+
+            <div class="result-item">
+                <strong>Q: 找到了函数但调用失败？</strong><br>
+                A: 可能参数格式不对。查看函数代码，或者在点击"领取"时设置断点，看实际传入的参数
+            </div>
+
+            <div class="result-item">
+                <strong>Q: h5st 版本号是什么？</strong><br>
+                A: h5st 签名的第二部分，例如 <code>36mwzzm9mh6qdqq7</code>。不同版本的算法可能不同
+            </div>
+        </div>
+
+        <!-- 下一步 -->
+        <div class="section">
+            <h2>🚀 找到后的下一步</h2>
+            <p style="color: #666; margin-bottom: 15px;">
+                如果成功找到并调用了 h5st 生成函数，我们可以：
+            </p>
+            <ol style="margin-left: 20px; color: #666;">
+                <li>将这个函数提取出来，集成到我们的工具中</li>
+                <li>在生成二维码时实时生成 h5st 签名</li>
+                <li>解决签名过期的问题</li>
+                <li>实现真正的抢券功能</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(id) {
+            const code = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ 代码已复制到剪贴板！\n\n请在京东页面的控制台中粘贴运行');
+            }).catch(err => {
+                alert('❌ 复制失败，请手动复制');
+            });
+        }
+    </script>
+</body>
+</html>
