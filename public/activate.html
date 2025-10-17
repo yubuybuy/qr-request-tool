@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京东按钮点亮工具 - 一键激活灰色领券按钮</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .alert {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .main-feature {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .main-feature h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .bookmarklet {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 20px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: move;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            margin: 20px 0;
+        }
+
+        .bookmarklet:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+        }
+
+        .instruction {
+            font-size: 14px;
+            margin-top: 15px;
+            opacity: 0.95;
+        }
+
+        .method-card {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .method-card h3 {
+            color: #667eea;
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .method-card h3::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 24px;
+            background: #667eea;
+            border-radius: 4px;
+            margin-right: 12px;
+        }
+
+        .code-box {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            position: relative;
+            margin: 15px 0;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+        }
+
+        .step-list li {
+            counter-increment: step-counter;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            position: relative;
+            padding-left: 70px;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .step-list li strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .btn-primary {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 10px;
+            transition: transform 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .feature-item:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .feature-item h4 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .feature-item p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .bookmarklet {
+                font-size: 16px;
+                padding: 15px 30px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔓 京东按钮点亮工具</h1>
+            <p>一键激活灰色领券按钮，提前抓包获取请求数据</p>
+        </div>
+
+        <div class="content">
+            <!-- 主要功能 -->
+            <div class="main-feature">
+                <h2>📌 拖拽书签到书签栏</h2>
+                <p style="margin-bottom: 20px;">最简单的使用方式：保存书签，一键点亮！</p>
+                <a href="javascript:(function()%7Bconst%20activate%3D()%3D%3E%7Blet%20count%3D0%3Bconst%20targets%3D%5B'button'%2C'.btn'%2C'.button'%2C'%5Bclass*%3D%22receive%22%5D'%2C'%5Bclass*%3D%22coupon%22%5D'%2C'a%5Bhref*%3D%22receive%22%5D'%5D%3Btargets.forEach(sel%3D%3E%7Bdocument.querySelectorAll(sel).forEach(el%3D%3E%7Bel.disabled%3Dfalse%3Bel.removeAttribute('disabled')%3Bel.classList.remove('disabled'%2C'gray'%2C'grey'%2C'btn-disabled')%3Bel.style.cssText%2B%3D'pointer-events%3Aauto!important%3Bopacity%3A1!important%3Bcursor%3Apointer!important%3Bfilter%3Anone!important%3B'%3Bcount%2B%2B%3B%7D)%3B%7D)%3Bdocument.querySelectorAll('*').forEach(el%3D%3E%7Bconst%20text%3Del.innerText%3Bif(text%26%26text.length%3C30%26%26(%2F%E9%A2%86%E5%8F%96%7C%E7%AB%8B%E5%8D%B3%7C%E6%8A%A2%E8%B4%AD%7C%E9%A9%AC%E4%B8%8A%2F.test(text)))%7Bel.disabled%3Dfalse%3Bel.removeAttribute('disabled')%3Bel.classList.remove('disabled'%2C'gray'%2C'grey')%3Bel.style.cssText%2B%3D'pointer-events%3Aauto!important%3Bopacity%3A1!important%3Bcursor%3Apointer!important%3B'%3Bconsole.log('%E2%9C%93%20%E6%BF%80%E6%B4%BB%3A'%2Ctext.trim().substring(0%2C15))%3Bcount%2B%2B%3B%7D%7D)%3Bconsole.log('%5Cn%E2%9C%85%20%E5%B7%B2%E7%82%B9%E4%BA%AE'%2Ccount%2C'%E4%B8%AA%E6%8C%89%E9%92%AE')%3Balert('%E2%9C%85%20%E5%B7%B2%E7%82%B9%E4%BA%AE%20'%2Bcount%2B'%20%E4%B8%AA%E6%8C%89%E9%92%AE%EF%BC%81%5Cn%5Cn%F0%9F%92%A1%20%E7%8E%B0%E5%9C%A8%E5%8F%AF%E4%BB%A5%E7%82%B9%E5%87%BB%E9%A2%86%E5%8F%96%E6%8C%89%E9%92%AE%E4%BA%86')%3B%7D%3Bactivate()%3B%7D)()"
+                   class="bookmarklet"
+                   onclick="alert('❌ 不要点击！\n\n请用鼠标拖拽这个按钮到浏览器顶部的书签栏'); return false;">
+                    🔓 一键点亮
+                </a>
+                <div class="instruction">
+                    ⚠️ 用鼠标<strong>拖拽</strong>（不是点击）到浏览器顶部的书签栏<br>
+                    💡 如果看不到书签栏，按 Ctrl+Shift+B（Mac: Cmd+Shift+B）
+                </div>
+            </div>
+
+            <!-- 功能特点 -->
+            <div class="alert alert-info">
+                <strong>✨ 工具特点：</strong><br>
+                1. 💨 快速：一键激活所有灰色按钮<br>
+                2. 🎯 精准：智能识别领券按钮<br>
+                3. 🔒 安全：纯前端脚本，不上传任何数据<br>
+                4. 📱 通用：支持所有京东活动页面
+            </div>
+
+            <!-- 使用步骤 -->
+            <div class="method-card">
+                <h3>📚 使用步骤</h3>
+                <ol class="step-list">
+                    <li>
+                        <strong>保存书签</strong>
+                        拖拽上方的"🔓 一键点亮"按钮到浏览器书签栏
+                    </li>
+                    <li>
+                        <strong>打开京东活动页面</strong>
+                        访问任何有灰色领券按钮的京东活动页面
+                    </li>
+                    <li>
+                        <strong>点击书签</strong>
+                        点击书签栏的"🔓 一键点亮"，等待弹窗提示
+                    </li>
+                    <li>
+                        <strong>点击领取按钮</strong>
+                        现在灰色按钮已经点亮，可以点击了
+                    </li>
+                </ol>
+            </div>
+
+            <!-- 手动脚本方式 -->
+            <div class="method-card">
+                <h3>💻 方法2：手动运行脚本</h3>
+                <p style="margin-bottom: 15px; color: #666;">如果书签不方便，可以在控制台手动运行脚本</p>
+
+                <div class="code-box">
+                    <button class="copy-btn" onclick="copyCode('manualScript')">复制代码</button>
+                    <pre id="manualScript">// 京东按钮点亮脚本
+(function() {
+    let count = 0;
+
+    // 1. 激活所有可能的按钮元素
+    const selectors = [
+        'button',
+        '.btn',
+        '.button',
+        '[class*="receive"]',
+        '[class*="coupon"]',
+        'a[href*="receive"]'
+    ];
+
+    selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+            el.disabled = false;
+            el.removeAttribute('disabled');
+            el.classList.remove('disabled', 'gray', 'grey', 'btn-disabled');
+            el.style.cssText += 'pointer-events:auto!important;opacity:1!important;cursor:pointer!important;filter:none!important;';
+            count++;
+        });
+    });
+
+    // 2. 查找包含领取文字的元素
+    document.querySelectorAll('*').forEach(el => {
+        const text = el.innerText;
+        if (text && text.length < 30 && /领取|立即|抢购|马上/.test(text)) {
+            el.disabled = false;
+            el.removeAttribute('disabled');
+            el.classList.remove('disabled', 'gray', 'grey');
+            el.style.cssText += 'pointer-events:auto!important;opacity:1!important;cursor:pointer!important;';
+            console.log('✓ 激活:', text.trim().substring(0, 15));
+            count++;
+        }
+    });
+
+    console.log('\n✅ 已点亮', count, '个按钮');
+    alert(`✅ 已点亮 ${count} 个按钮！\n\n💡 现在可以点击领取按钮了`);
+})();</pre>
+                </div>
+
+                <p style="margin-top: 15px; color: #666; font-size: 14px;">
+                    💡 使用方法：在京东页面按 F12 打开控制台，粘贴上面的代码，按回车运行
+                </p>
+            </div>
+
+            <!-- 注意事项 -->
+            <div class="alert alert-warning">
+                <strong>⚠️ 重要说明：</strong><br>
+                1. 点亮按钮 ≠ 真的能领券，服务器会检查时间和库存<br>
+                2. 主要用于<strong>提前抓包</strong>，获取请求参数<br>
+                3. 配合 <a href="/h5st-debugger.html" style="color: #667eea; text-decoration: underline;">h5st 调试工具</a> 使用效果更好<br>
+                4. 仅供学习研究使用，请勿用于违规操作
+            </div>
+
+            <!-- 常见问题 -->
+            <div class="method-card">
+                <h3>❓ 常见问题</h3>
+
+                <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #667eea;">
+                    <strong style="color: #667eea;">Q: 点亮后按钮还是点不了？</strong><br>
+                    <p style="margin-top: 8px; color: #666;">
+                        A: 可能页面有 JavaScript 检查。尝试：<br>
+                        1. 刷新页面后再运行脚本<br>
+                        2. 使用浏览器的"检查元素"直接修改按钮<br>
+                        3. 尝试修改系统时间（高级）
+                    </p>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #667eea;">
+                    <strong style="color: #667eea;">Q: 点亮后点击按钮还是提示"未开始"？</strong><br>
+                    <p style="margin-top: 8px; color: #666;">
+                        A: 这是正常的！服务器端会检查时间。点亮按钮的主要目的是让你能<strong>点击</strong>按钮，从而触发网络请求，方便抓包获取 h5st 签名等参数。
+                    </p>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #667eea;">
+                    <strong style="color: #667eea;">Q: 如何配合 h5st 调试工具使用？</strong><br>
+                    <p style="margin-top: 8px; color: #666;">
+                        A: 完整流程：<br>
+                        1. 先运行 <a href="/h5st-debugger.html" style="color: #667eea;">h5st 监听脚本</a><br>
+                        2. 再运行本工具点亮按钮<br>
+                        3. 点击按钮后，h5st 脚本会自动捕获签名<br>
+                        4. 在控制台查看捕获的数据
+                    </p>
+                </div>
+
+                <div style="margin: 20px 0; padding: 15px; background: white; border-radius: 8px; border-left: 3px solid #667eea;">
+                    <strong style="color: #667eea;">Q: 书签拖不进去？</strong><br>
+                    <p style="margin-top: 8px; color: #666;">
+                        A: 确保：<br>
+                        1. 书签栏已显示（按 Ctrl+Shift+B）<br>
+                        2. 用鼠标<strong>按住拖拽</strong>，不是点击<br>
+                        3. 或者直接使用"方法2"的手动脚本
+                    </p>
+                </div>
+            </div>
+
+            <!-- 相关工具 -->
+            <div class="method-card">
+                <h3>🔗 相关工具</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
+                    <a href="/h5st-debugger.html" class="btn-primary">
+                        🔍 h5st 调试工具
+                    </a>
+                    <a href="/h5st-bookmarklet.html" class="btn-primary">
+                        📖 h5st 书签工具
+                    </a>
+                    <a href="/jd.html" class="btn-primary">
+                        📦 二维码生成器
+                    </a>
+                    <a href="/" class="btn-primary">
+                        🏠 返回首页
+                    </a>
+                </div>
+            </div>
+
+            <!-- 成功案例 -->
+            <div class="alert alert-success">
+                <strong>✅ 成功后你会看到：</strong><br>
+                1. 弹窗显示"已点亮 X 个按钮"<br>
+                2. 灰色按钮变成彩色/可点击状态<br>
+                3. 控制台输出激活的按钮列表<br>
+                4. 可以点击按钮触发网络请求
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyCode(id) {
+            const code = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ 已复制';
+                btn.style.background = '#28a745';
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                alert('复制失败，请手动复制代码');
+            });
+        }
+    </script>
+</body>
+</html>
