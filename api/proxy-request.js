@@ -13,15 +13,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { data } = req.body;
+    const { config } = req.body;
 
-    if (!data) {
+    if (!config) {
       return res.status(400).json({ error: '缺少配置数据' });
     }
-
-    // 解码配置
-    const configJson = Buffer.from(data, 'base64url').toString('utf-8');
-    const config = JSON.parse(configJson);
 
     // 准备请求体
     let requestBody;
@@ -44,6 +40,12 @@ module.exports = async (req, res) => {
           : JSON.stringify(config.body);
       }
     }
+
+    console.log('代理请求:', {
+      url: config.url,
+      method: config.method,
+      bodyLength: requestBody ? requestBody.length : 0
+    });
 
     // 发起请求
     const response = await fetch(config.url, {

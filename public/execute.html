@@ -197,20 +197,37 @@
     <script>
         let requestConfig = null;
 
-        // 从 URL 参数获取编码的配置
-        function loadRequestConfig() {
+        // 从 URL 参数获取 ID 并加载配置
+        async function loadRequestConfig() {
             try {
                 const urlParams = new URLSearchParams(window.location.search);
-                const encodedData = urlParams.get('data');
+                const requestId = urlParams.get('id');
 
-                if (!encodedData) {
-                    showError('缺少请求配置数据');
+                if (!requestId) {
+                    showError('缺少请求 ID');
                     return;
                 }
 
-                // 解码 base64url
-                const jsonStr = atob(encodedData.replace(/-/g, '+').replace(/_/g, '/'));
-                requestConfig = JSON.parse(jsonStr);
+                console.log('加载配置 ID:', requestId);
+
+                // 从服务器获取配置
+                const response = await fetch(`/api/get-config?id=${requestId}`);
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    showError(error.error || '加载配置失败');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    showError('加载配置失败');
+                    return;
+                }
+
+                requestConfig = result.config;
+                console.log('配置加载成功');
 
                 displayRequestInfo();
 
@@ -220,8 +237,8 @@
                 }, 500);
 
             } catch (error) {
-                console.error('解码失败:', error);
-                showError('解析请求配置失败: ' + error.message);
+                console.error('加载配置失败:', error);
+                showError('加载配置失败: ' + error.message);
             }
         }
 
@@ -245,20 +262,16 @@
             document.getElementById('resultBox').classList.remove('show');
 
             try {
-                // 编码配置并发送
-                const encodedConfig = btoa(JSON.stringify(requestConfig))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_')
-                    .replace(/=/g, '');
+                console.log('准备发送请求...');
 
-                // 通过后端代理发起请求（避免跨域）
+                // 直接发送配置到 proxy-request
                 const response = await fetch('/api/proxy-request', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        data: encodedConfig
+                        config: requestConfig
                     })
                 });
 

@@ -284,20 +284,15 @@
                 // 自动识别 API 地址
                 let apiUrl = "https://api.m.jd.com/api"; // 默认地址
 
-                // 从 body 中提取可能的 URL
+                // 根据 functionId 判断 API 地址
                 if (body.includes('functionId=')) {
-                    // 检查是否已包含完整 URL
-                    const urlMatch = body.match(/https?:\/\/[^\s&]+/);
-                    if (urlMatch) {
-                        apiUrl = urlMatch[0];
+                    if (body.includes('client.action')) {
+                        apiUrl = "https://api.m.jd.com/client.action";
+                    } else if (body.includes('newBabelAwardCollection')) {
+                        apiUrl = "https://api.m.jd.com/api";
                     } else {
-                        // 根据 functionId 判断
-                        if (body.includes('client.action')) {
-                            apiUrl = "https://api.m.jd.com/client.action";
-                        } else if (body.includes('functionId') && !body.includes('newBabelAwardCollection')) {
-                            // 其他 functionId 可能用不同的路径
-                            apiUrl = "https://api.m.jd.com/";
-                        }
+                        // 其他 functionId 默认使用 api.m.jd.com
+                        apiUrl = "https://api.m.jd.com/";
                     }
                 }
 

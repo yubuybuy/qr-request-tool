@@ -1,10 +1,13 @@
 const express = require('express');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
 const QRCode = require('qrcode');
 const cors = require('cors');
 const path = require('path');
 const pako = require('pako');
 
-// 简单的 UUID 生成函数（避免 ES Module 问题）
+// 简单的 UUID 生成函数
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     const r = Math.random() * 16 | 0;
@@ -14,8 +17,9 @@ function generateUUID() {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.PUBLIC_HOST || 'localhost'; // 公网地址或域名
+const HTTP_PORT = process.env.HTTP_PORT || 8080;
+const HTTPS_PORT = process.env.HTTPS_PORT || 8443;
+const HOST = process.env.PUBLIC_HOST || 'localhost';
 
 // 使用内存存储（云服务器单进程完美支持）
 global.requestStore = global.requestStore || new Map();
@@ -57,9 +61,9 @@ app.post('/api/generate-qr', async (req, res) => {
       global.requestStore.delete(requestId);
     }, 10 * 60 * 1000);
 
-    // 获取当前域名
-    const protocol = HOST === 'localhost' ? 'http' : 'https';
-    const portStr = HOST === 'localhost' ? `:${PORT}` : '';
+    // 获取当前域名（优先使用 HTTPS）
+    const protocol = 'https';
+    const portStr = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
     const executeUrl = `${protocol}://${HOST}${portStr}/execute.html?id=${requestId}`;
 
     console.log('原始数据长度:', jsonStr.length);
@@ -211,8 +215,38 @@ app.post('/api/proxy-request', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`服务运行在 http://${HOST}:${PORT}`);
-  console.log(`局域网访问: http://${HOST}:${PORT}`);
-  console.log(`本地访问: http://localhost:${PORT}`);
+// 尝试读取 SSL 证书
+let sslOptions = null;
+const sslKeyPath = path.join(__dirname, 'ssl', 'key.pem');
+const sslCertPath = path.join(__dirname, 'ssl', 'cert.pem');
+
+try {
+  if (fs.existsSync(sslKeyPath) && fs.existsSync(sslCertPath)) {
+    sslOptions = {
+      key: fs.readFileSync(sslKeyPath),
+      cert: fs.readFileSync(sslCertPath)
+    };
+    console.log('✓ SSL 证书加载成功');
+  }
+} catch (error) {
+  console.warn('⚠ SSL 证书加载失败，将只启动 HTTP 服务');
+}
+
+// 启动 HTTP 服务
+http.createServer(app).listen(HTTP_PORT, '0.0.0.0', () => {
+  console.log(`✓ HTTP 服务运行在 http://${HOST}:${HTTP_PORT}`);
 });
+
+// 如果有 SSL 证书，启动 HTTPS 服务
+if (sslOptions) {
+  https.createServer(sslOptions, app).listen(HTTPS_PORT, '0.0.0.0', () => {
+    console.log(`✓ HTTPS 服务运行在 https://${HOST}:${HTTPS_PORT}`);
+    console.log(`✓ 二维码将使用 HTTPS 地址`);
+  });
+} else {
+  console.log('');
+  console.log('如需启用 HTTPS，请执行：');
+  console.log('  mkdir ssl');
+  console.log('  openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes -subj "/CN=' + HOST + '"');
+  console.log('');
+}
